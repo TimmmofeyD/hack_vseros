@@ -176,11 +176,11 @@ def main():
     init(df=df)
 
     if st.session_state.num == 1:
-        st.markdown('<p class="sub-title">Топ-10 новых рекомендованнных видео на текущий момент. Страница 1/20</p>', unsafe_allow_html=True)
+        st.markdown('<p class="sub-title">Топ-10 новых рекомендованных видео на RUTUBE. Страница 1/20</p>', unsafe_allow_html=True)
         show_page()
 
     elif st.session_state.num <= 20:
-        st.markdown(f'<p class="sub-title">Топ-10 новых рекомендованнных видео на текущий момент. Страница {st.session_state.num}/20</p>', unsafe_allow_html=True)
+        st.markdown(f'<p class="sub-title">Топ-10 новых рекомендованных видео на RUTUBE. Страница {st.session_state.num}/20</p>', unsafe_allow_html=True)
         update(new_df=df_1)
         show_page()
 
