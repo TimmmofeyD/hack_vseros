@@ -4,7 +4,7 @@ import emoji
 
 
 class Page:
-    def __init__(self, df: pd.DataFrame, page: int):
+    def __init__(self, df: pd.DataFrame, num: int):
         """
         Initialization Page class
 
@@ -12,8 +12,8 @@ class Page:
         :param page: number of page (1-20).
         """
         self.df = df
-        self.page = page
-        self.sliders = []
+        self.num = num
+        self.video_procent = []
         self.likes = []
         self.dislikes = []
         self.set_style_elements()
@@ -21,23 +21,11 @@ class Page:
 
     def set_style_elements(self):
         """
-
+        Set frontend style elements in streamlit: 
+        1. button
         """
         st.markdown("""
             <style>
-            .stContainer>container{
-                color: white;
-                flex: 1 1 210px; 
-                min-width: 160px;  /* Минимальная ширина карточки */
-                height: 260px;     /* Фиксированная высота карточки */
-                box-sizing: border-box;  /* Учитываем padding в размерах */
-                flex-shrink: 0;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-            }
-
             .stButton>button{
                 font-family: 'Roboto', sans-serif;
                 font-size: 16px;  /* Размер шрифта */
@@ -60,27 +48,36 @@ class Page:
                 background-color: #7F7F7F;
                 color: #EFEFEF;
             }
-
-            .stCheckbox>checkbox{
-                display: block;
-            }
-
             </style>
             """, unsafe_allow_html=True)
 
 
     def change_df(self, new_df):
+        """
+        
+        """
         self.df = new_df
 
 
     def update_values(self):
-        self.page += 1
-        self.sliders = []
+        """
+        Update values for new page number.
+        """
+        self.num += 1
+        self.video_procent = []
         self.likes = []
         self.dislikes = []
 
 
     def create_card(self, title, category, description, date, index):
+        """
+        Create form card of video.
+
+        :param title: title of video
+        :param category: category_id of video
+        :param description: description of video
+        :param date: v_pub_datetime of 
+        """
         st.markdown("""
             <style>
             .card-container {
@@ -162,14 +159,14 @@ class Page:
             
             .card-description {
                 font-family: 'Roboto', sans-serif;
-                font-size: 12px;  /* Размер шрифта */
+                font-size: 12px; 
                 font-weight: light;
                 padding-top: 0;
-                max-height: 160px; /* Максимальная высота описания */
-                overflow-y: auto;  /* Добавляем прокрутку, если текст превышает высоту */
-                white-space: normal; /* Позволяем перенос строк */
-                text-overflow: ellipsis;  /* Многоточие для длинного текста */
-                word-wrap: break-word;  /* Перенос длинных слов */
+                max-height: 160px;
+                overflow-y: auto;  /* Add slider if text more than height */
+                white-space: normal; /* Allow new lines */
+                text-overflow: ellipsis;  /* Many point for long text */
+                word-wrap: break-word;  /* New lines for long words */
                 text-align: left;
             }
             </style>
@@ -191,27 +188,31 @@ class Page:
 
 
     def add_feedback(self, i):
+        """
+        Add form for feedback. 
+        Form contains slider with video procent (0-100%) and two checkboxes for likes and dislikes.
+        Every element is writen to list for saving information.
+        
+        :param i: base index of group elements for create new copy elements
+        """
         with st.container(height=115):
             col_x, col_y = st.columns(2)
             with col_x:
-                self.sliders.append(st.slider(label="Процент просмотренного видео", min_value=0, max_value=100, value=0, key=100*self.page+i+0))
+                self.video_procent.append(st.slider(label="Процент просмотренного видео", min_value=0, max_value=100, value=0, key=100*self.num+i+0))
             with col_y:
-                self.likes.append(st.checkbox(label=emoji.emojize(":thumbs_up: Нравится"), key=100*self.page+i+1))
-                self.likes.append(st.checkbox(label=emoji.emojize(":thumbs_down: Не нравится"), key=100*self.page+i+2))        
-
-
-    def nextpage(self) -> None: 
-        """
-        Move to next page of videos.
-
-        :return: None
-        """
-        st.session_state.page += 1
-        return None
+                self.likes.append(st.checkbox(label=emoji.emojize(":thumbs_up: Нравится"), key=100*self.num+i+1))
+                self.dislikes.append(st.checkbox(label=emoji.emojize(":thumbs_down: Не нравится"), key=100*self.num+i+2))        
 
 
     def show_create_card(self):
-        # Первый ряд карточек
+        """
+        Show new created cards.
+        Every line cards contains 4 columns.
+        First line - 4 cards.
+        Second line - 4 cards.
+        Third line - 2 cards.      
+        """
+        # First line cards
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             self.create_card(self.df.iloc[0, 1], self.df.iloc[0, 2], self.df.iloc[0, 3], self.df.iloc[0, 4], 0)
@@ -226,7 +227,7 @@ class Page:
             self.create_card(self.df.iloc[3, 1], self.df.iloc[3, 2], self.df.iloc[3, 3], self.df.iloc[3, 4], 3)
             self.add_feedback(9)
 
-        # Второй ряд карточек
+        # Second line cards
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             self.create_card(self.df.iloc[4, 1], self.df.iloc[4, 2], self.df.iloc[4, 3], self.df.iloc[4, 4], 4)
@@ -241,10 +242,10 @@ class Page:
             self.create_card(self.df.iloc[7, 1], self.df.iloc[7, 2], self.df.iloc[7, 3], self.df.iloc[7, 4], 7)
             self.add_feedback(21)
 
-        # Третий ряд карточек
+        # Third line cards
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            pass  # Пустая колонка
+            pass  # Empty column
         with col2:
             self.create_card(self.df.iloc[8, 1], self.df.iloc[8, 2], self.df.iloc[8, 3], self.df.iloc[8, 4], 8)
             self.add_feedback(24)
@@ -252,7 +253,5 @@ class Page:
             self.create_card(self.df.iloc[9, 1], self.df.iloc[9, 2], self.df.iloc[9, 3], self.df.iloc[9, 4], 9)
             self.add_feedback(27)
         with col4:
-            pass  # Пустая колонка
-
-        # Кнопка перехода
-        st.button(label="Далее", on_click=self.nextpage, disabled=(st.session_state.page > 21))   
+            pass  # Empty column
+ 

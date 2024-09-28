@@ -3,17 +3,15 @@ import pandas as pd
 from page import Page
 
 
-def settings_params() -> None:
+def settings_params():
     """
-    Set page config, title and headers.
-
-    :return: None
+    Set page config, title.
     """
-    st.set_page_config(page_title="Обратная связь для новых пользователей", layout="wide")
+    st.set_page_config(page_title="ПриМат. Веб-приложение тестирования алгоритма холодного старта", layout="wide")
     st.markdown(
         """
         <style>
-        /* Стиль для основного заголовка */
+        /* Style header */
         .main-title {
             font-family: 'Roboto', sans-serif;
             font-size: 48px;
@@ -21,29 +19,17 @@ def settings_params() -> None:
             margin-bottom: 32px;
         }
 
-        /* Стиль для подзаголовка */
+        /* Style subheader */
         .sub-title {
             font-family: 'Roboto', sans-serif;
             font-size: 28px;
             font-weight: normal;
         }
-        
-        .stContainer>container{
-            color: white;
-            flex: 1 1 210px; 
-            min-width: 160px;  /* Минимальная ширина карточки */
-            height: 260px;     /* Фиксированная высота карточки */
-            box-sizing: border-box;  /* Учитываем padding в размерах */
-            flex-shrink: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
 
+        /* Style button */
         .stButton>button{
             font-family: 'Roboto', sans-serif;
-            font-size: 16px;  /* Размер шрифта */
+            font-size: 16px; 
             font-weight: bold;
             padding: 10px;
             width: 190px;
@@ -55,10 +41,11 @@ def settings_params() -> None:
             cursor: pointer;
             display: flex;
             justify-content: center;
-            margin: 0 auto;  /* Центрируем кнопку в родительском контейнере */
+            margin: 0 auto;  /* Center button in parent container */
             position: relative;
         }
-                
+
+        /* Additional style button */ 
         .stButton>button:hover {
             background-color: #7F7F7F;
             color: #EFEFEF;
@@ -67,11 +54,10 @@ def settings_params() -> None:
         """,
         unsafe_allow_html=True,
     )            
-
-    st.markdown('<p class="main-title">Pешение проблемы холодного старта у новых пользователей</p>',
-                unsafe_allow_html=True)
-    
-    return None
+    st.markdown(
+        '<p class="main-title">Pешение проблемы холодного старта у новых пользователей</p>',
+        unsafe_allow_html=True
+    )
 
 
 def init_df(new=""):
@@ -86,30 +72,25 @@ def init_df(new=""):
     return df
 
 
-def change_columns_df(df):
-    return df.rename(columns={
-        'video_id': 'ID видео', 
-        'title': 'Название',
-        'category_id': 'Категория',
-        'description': 'Описание',
-        'v_pub_datetime': 'Дата публикации'
-    })
-
-
-def restart(df): 
+def restart(df: pd.DataFrame): 
     """
     Return to first page of videos.
 
-    :return: None
+    :param df: table about first top ten videos (title, category, description, date) 
     """
-    st.session_state.page = 1
-    st.session_state.sliders = []
+    # init page
+    st.session_state.num = 1
+    st.session_state.page = Page(df, st.session_state.num)
+
+    # init feedback in session
+    st.session_state.video_procent = []
     st.session_state.likes = []
     st.session_state.dislikes = []
-    st.session_state.obj = Page(df, st.session_state.page)
+
     st.session_state.model = None
+
+    # init indexes of pagse for check shows and updates
     st.session_state.is_change = [False for i in range(21)]
-    return None
 
 
 def init(df: pd.DataFrame) -> bool:
@@ -120,13 +101,20 @@ def init(df: pd.DataFrame) -> bool:
     :return: status for debugging (True - init, False - not init)
     """
     if "page" not in st.session_state:
-        st.session_state.page = 1
-        st.session_state.sliders = []
+        # init page
+        st.session_state.num = 1
+        st.session_state.page = Page(df, st.session_state.num)
+
+        # init feedback in session
+        st.session_state.video_procent = []
         st.session_state.likes = []
         st.session_state.dislikes = []
-        st.session_state.obj = Page(df, st.session_state.page)
+
         st.session_state.model = None
+
+        # init indexes of pagse for check shows and updates
         st.session_state.is_change = [False for i in range(21)]
+
         return True
     return False
 
@@ -138,50 +126,61 @@ def update(new_df: pd.DataFrame) -> bool:
     :param new_df: table about new top ten videos (title, category, description, date)
     :return: status for debugging (True - update, False - not update) 
     """
-    if st.session_state.is_change[st.session_state.page-1] == True:
-        st.session_state.likes = st.session_state.obj.likes
-        st.session_state.dislikes = st.session_state.obj.dislikes
-        st.session_state.sliders = st.session_state.obj.sliders
+    # if page is ready to update  
+    if st.session_state.is_change[st.session_state.num-1] == True:
+        
+        # save feedback in session 
+        st.session_state.likes = st.session_state.page.likes
+        st.session_state.dislikes = st.session_state.page.dislikes
+        st.session_state.video_procent = st.session_state.page.video_procent
+
         st.session_state.model = None
-        st.session_state.obj.change_df(new_df)
-        st.session_state.obj.update_values()
-        st.session_state.is_change[st.session_state.page-1] = False
+        st.session_state.page.change_df(new_df)
+        st.session_state.page.update_values()
+
+        # set False for index, that page was update
+        st.session_state.is_change[st.session_state.num-1] = False
         return True
     return False
 
 
-def show_page() -> None:
+def show_page():
     """
-    Show page number, title of table and information about video.
-
-    :return: None
+    Show page with information about video, form for feedback.
     """
-    st.session_state.obj.show_create_card()
-    st.session_state.is_change[st.session_state.page] = True 
-    return None   
+    st.session_state.page.show_create_card()
+    st.button(label="Далее", on_click=nextpage, disabled=(st.session_state.num > 21))   
+
+    # set True for index, that page was shown
+    st.session_state.is_change[st.session_state.num] = True 
 
 
-def main() -> None:
+def nextpage(): 
+    """
+    Move to next page of videos.
+    """
+    st.session_state.num += 1
+
+
+def main():
     """
     Main function of streamlit application.
-
-    :return: None
     """
     settings_params()
 
-    df = change_columns_df(init_df())
-    df_1 = change_columns_df(init_df("новый датасет"))
+    df = init_df()
+    df_1 = init_df("новый датасет")
 
     placeholder = st.empty()
 
     init(df=df)
 
-    if st.session_state.page == 1:
-        st.markdown('<p class="sub-title">Пожалуйста, оцените нижепредложенные видео. Страница 1/20</p>', unsafe_allow_html=True)
+    if st.session_state.num == 1:
+        st.markdown('<p class="sub-title">Топ-10 новых рекомендованнных видео на текущий момент. Страница 1/20</p>', unsafe_allow_html=True)
         show_page()
 
-    elif st.session_state.page <= 20:
-        st.markdown(f'<p class="sub-title">Пожалуйста, оцените нижепредложенные видео. Страница {st.session_state.page}/20</p>', unsafe_allow_html=True)
+    elif st.session_state.num <= 20:
+        st.markdown(f'<p class="sub-title">Топ-10 новых рекомендованнных видео на текущий момент. Страница {st.session_state.num}/20</p>', unsafe_allow_html=True)
         update(new_df=df_1)
         show_page()
 
