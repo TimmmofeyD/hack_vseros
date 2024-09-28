@@ -5,3 +5,4 @@ video_stat[[:space:]]—[[:space:]]копия[[:space:]](3).parquet filter=lfs d
 video_stat[[:space:]]—[[:space:]]копия.parquet filter=lfs diff=lfs merge=lfs -text
 texts.csv filter=lfs diff=lfs merge=lfs -text
 text.txt filter=lfs diff=lfs merge=lfs -text
+video_stat[[:space:]]—[[:space:]]копия[[:space:]](2)[[:space:]]—[[:space:]]копия.parquet filter=lfs diff=lfs merge=lfs -text
