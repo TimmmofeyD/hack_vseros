@@ -1,6 +1,8 @@
 import streamlit as st 
 import pandas as pd
 from page import Page
+import json
+import time
 
 
 def settings_params():
@@ -60,70 +62,83 @@ def settings_params():
     )
 
 
-def init_df(new=""):
-    df = pd.DataFrame(data={
-        'video_id': ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
-        'title': [f"Супер длинный жоско длинный заголовок который не вмещается {i}" for i in range(10)],
-        'category_id': ['Мультфильм', 'Мультфильм', 'Хобби', 'Равлечение', 'Юмор', 'Юмор', 'Наука', 'Здоровье', 'Красота', 'Аудиокниги'],
-        'description': [f"{new}Равным образом выбранный нами инновационный путь Равным и уточнения модели развития! Соображения высшего порядка, а также реализация намеченной модели развития! {i}" 
-            for i in range(10)],
-        'v_pub_datetime': ['2024-06-15 22:58:03', '2024-06-15 22:58:03', '2024-06-15 22:58:03', '2024-06-15 22:58:03', '2024-06-15 22:58:03', '2024-06-15 22:58:03', '2024-06-15 22:58:03', '2024-06-15 22:58:03', '2024-06-15 22:58:03', '2024-06-15 22:58:03']
-    })
-    return df
+def get_video_ids(i):
+    """ 
 
-
-def restart(df: pd.DataFrame): 
     """
-    Return to first page of videos.
+    return [f'{i+1}', f'{i+2}', f'{i+3}', f'{i+4}', f'{i+5}', f'{i+6}', f'{i+7}', f'{i+8}', f'{i+9}', f'{i+10}']
 
-    :param df: table about first top ten videos (title, category, description, date) 
+
+def get_videos(video_ids: list):
+    """  
+
     """
-    # init page
-    st.session_state.num = 1
-    st.session_state.page = Page(df, st.session_state.num)
+    lst = []
 
-    # init feedback in session
-    st.session_state.video_procent = []
-    st.session_state.likes = []
-    st.session_state.dislikes = []
+    with open('videos.json', 'r') as openfile:
+        json_object = json.load(openfile)
+        for video_id in video_ids:
+            lst.append([])
+            lst[-1].append(video_id)
+            lst[-1].append(json_object[video_id][0])
+            lst[-1].append(json_object[video_id][1])
+            lst[-1].append(json_object[video_id][2])
+            lst[-1].append(json_object[video_id][3])
 
-    st.session_state.model = None
-
-    # init indexes of pagse for check shows and updates
-    st.session_state.is_change = [False for i in range(21)]
+    return lst
 
 
-def init(df: pd.DataFrame) -> bool:
+def post_feedback(videos: list, procents: list, likes: list, dislikes: list):
+    """
+
+    """
+    dct = {
+        videos[0]: [procents[0], likes[0], dislikes[0]],
+        videos[1]: [procents[1], likes[1], dislikes[1]],
+        videos[2]: [procents[2], likes[2], dislikes[2]],
+        videos[3]: [procents[3], likes[3], dislikes[3]],
+        videos[4]: [procents[4], likes[4], dislikes[4]],
+        videos[5]: [procents[5], likes[5], dislikes[5]],
+        videos[6]: [procents[6], likes[6], dislikes[6]],
+        videos[7]: [procents[7], likes[7], dislikes[7]],
+        videos[8]: [procents[8], likes[8], dislikes[8]],
+        videos[9]: [procents[9], likes[9], dislikes[9]]
+    }
+
+    with open("results.json", "w") as outfile:
+        json.dump(dct, outfile)
+
+
+def init() -> bool:
     """
     Initialization elements of veb-site.
 
-    :param df: table about first top ten videos (title, category, description, date) 
     :return: status for debugging (True - init, False - not init)
     """
     if "page" not in st.session_state:
-        # init page
-        st.session_state.num = 1
-        st.session_state.page = Page(df, st.session_state.num)
-
         # init feedback in session
         st.session_state.video_procent = []
         st.session_state.likes = []
         st.session_state.dislikes = []
 
-        st.session_state.model = None
+        # FROM BACKEND        
+        st.session_state.video_id = get_video_ids(0) 
 
-        # init indexes of pagse for check shows and updates
+        # init page
+        st.session_state.num = 1
+        st.session_state.page = Page(get_videos(st.session_state.video_id), st.session_state.num)
+        
+        # init indexes of page for check shows and updates
         st.session_state.is_change = [False for i in range(21)]
 
         return True
     return False
 
 
-def update(new_df: pd.DataFrame) -> bool:
+def update() -> bool:
     """
     Updating elements of veb-site.
 
-    :param new_df: table about new top ten videos (title, category, description, date)
     :return: status for debugging (True - update, False - not update) 
     """
     # if page is ready to update  
@@ -134,14 +149,43 @@ def update(new_df: pd.DataFrame) -> bool:
         st.session_state.dislikes = st.session_state.page.dislikes
         st.session_state.video_procent = st.session_state.page.video_procent
 
-        st.session_state.model = None
-        st.session_state.page.change_df(new_df)
+        # TO BACKEND
+        post_feedback(st.session_state.video_id, st.session_state.video_procent, st.session_state.likes, st.session_state.dislikes)
+
+        #time.sleep(1)
+
+        # FROM BACKEND
+        st.session_state.video_id = get_video_ids(10)
+        
+        st.session_state.page.change_videos(get_videos(st.session_state.video_id))
         st.session_state.page.update_values()
 
         # set False for index, that page was update
         st.session_state.is_change[st.session_state.num-1] = False
         return True
     return False
+
+
+def restart(): 
+    """
+    Return to first page of videos.
+
+    """
+    # init feedback in session
+    st.session_state.video_id = []
+    st.session_state.video_procent = []
+    st.session_state.likes = []
+    st.session_state.dislikes = []
+
+    # FROM BACKEND        
+    st.session_state.video_id = get_video_ids(0) 
+
+    # init page
+    st.session_state.num = 1
+    st.session_state.page = Page(get_videos(st.session_state.video_id), st.session_state.num)
+
+    # init indexes of pagse for check shows and updates
+    st.session_state.is_change = [False for i in range(21)]
 
 
 def show_page():
@@ -166,18 +210,11 @@ def main():
     """
     Main function of streamlit application.
     """
-    #
-
     settings_params()
-
-    df = init_df()
-    df_1 = init_df("новый датасет")
-    df_2 = pd.read_csv('covid_russia.csv').head(10)
-    df_2["res"] = 1
 
     placeholder = st.empty()
 
-    init(df=df)
+    init()
 
     if st.session_state.num == 1:
         st.markdown('<p class="sub-title">Топ-10 новых рекомендованных видео на RUTUBE. Страница 1/20</p>', unsafe_allow_html=True)
@@ -185,12 +222,12 @@ def main():
 
     elif st.session_state.num <= 20:
         st.markdown(f'<p class="sub-title">Топ-10 новых рекомендованных видео на RUTUBE. Страница {st.session_state.num}/20</p>', unsafe_allow_html=True)
-        update(new_df=df_2)
+        update()
         show_page()
 
     else:
         with placeholder:
-            st.button("Заново", on_click=restart, args=(df,))
+            st.button("Заново", on_click=restart)
 
 
 

@@ -4,18 +4,18 @@ import emoji
 
 
 class Page:
-    def __init__(self, df: pd.DataFrame, num: int):
+    def __init__(self, videos: list, num: int):
         """
         Initialization Page class
 
         :param df: table about first top ten videos (title, category, description, date) 
         :param page: number of page (1-20).
         """
-        self.df = df
+        self.videos = videos
         self.num = num
-        self.video_procent = []
-        self.likes = []
-        self.dislikes = []
+        self.video_procent = [False for _ in range(10)]
+        self.likes = [None for _ in range(10)]
+        self.dislikes = [False for _ in range(10)]
         self.set_style_elements()
 
 
@@ -52,11 +52,11 @@ class Page:
             """, unsafe_allow_html=True)
 
 
-    def change_df(self, new_df):
+    def change_videos(self, new_videos):
         """
         
         """
-        self.df = new_df
+        self.videos = new_videos
 
 
     def update_values(self):
@@ -64,9 +64,9 @@ class Page:
         Update values for new page number.
         """
         self.num += 1
-        self.video_procent = []
-        self.likes = []
-        self.dislikes = []
+        self.video_procent = [False for _ in range(10)]
+        self.likes = [False for _ in range(10)]
+        self.dislikes = [False for _ in range(10)]
 
 
     def create_card(self, title, category, description, date, index):
@@ -198,10 +198,20 @@ class Page:
         with st.container(height=115):
             col_x, col_y = st.columns(2)
             with col_x:
-                self.video_procent.append(st.slider(label="Процент просмотренного видео", min_value=0, max_value=100, value=0, key=100*self.num+i+0))
+                s = st.slider(label="Процент просмотренного видео", min_value=0, max_value=100, value=0, key=100*self.num+i+0)
+                self.video_procent[i//3] = s
+                #else:
+                #    self.likes[i//3] = False
+                #self.video_procent.append(st.slider(label="Процент просмотренного видео", min_value=0, max_value=100, value=0, key=100*self.num+i+0))
             with col_y:
-                self.likes.append(st.checkbox(label=emoji.emojize(":thumbs_up: Нравится"), key=100*self.num+i+1))
-                self.dislikes.append(st.checkbox(label=emoji.emojize(":thumbs_down: Не нравится"), key=100*self.num+i+2))        
+                if st.checkbox(label=emoji.emojize(":thumbs_up: Нравится"), key=100*self.num+i+1):
+                    self.likes[i//3] = True
+                else:
+                    self.likes[i//3] = False
+                if st.checkbox(label=emoji.emojize(":thumbs_down: Не нравится"), key=100*self.num+i+2):
+                    self.dislikes[i//3] = True
+                else:
+                    self.dislikes[i//3] = False   
 
 
     def show_create_card(self):
@@ -215,31 +225,31 @@ class Page:
         # First line cards
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            self.create_card(self.df.iloc[0, 1], self.df.iloc[0, 2], self.df.iloc[0, 3], self.df.iloc[0, 4], 0)
+            self.create_card(self.videos[0][1], self.videos[0][2], self.videos[0][3], self.videos[0][4], 0)
             self.add_feedback(0)
         with col2:
-            self.create_card(self.df.iloc[1, 1], self.df.iloc[1, 2], self.df.iloc[1, 3], self.df.iloc[1, 4], 1)
+            self.create_card(self.videos[1][1], self.videos[1][2], self.videos[1][3], self.videos[1][4], 1)
             self.add_feedback(3)
         with col3:
-            self.create_card(self.df.iloc[2, 1], self.df.iloc[2, 2], self.df.iloc[2, 3], self.df.iloc[2, 4], 2)
+            self.create_card(self.videos[2][1], self.videos[2][2], self.videos[2][3], self.videos[2][4], 2)
             self.add_feedback(6)
         with col4:
-            self.create_card(self.df.iloc[3, 1], self.df.iloc[3, 2], self.df.iloc[3, 3], self.df.iloc[3, 4], 3)
+            self.create_card(self.videos[3][1], self.videos[3][2], self.videos[3][3], self.videos[3][4], 3)
             self.add_feedback(9)
 
         # Second line cards
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            self.create_card(self.df.iloc[4, 1], self.df.iloc[4, 2], self.df.iloc[4, 3], self.df.iloc[4, 4], 4)
+            self.create_card(self.videos[4][1], self.videos[4][2], self.videos[4][3], self.videos[4][4], 4)
             self.add_feedback(12)
         with col2:
-            self.create_card(self.df.iloc[5, 1], self.df.iloc[5, 2], self.df.iloc[5, 3], self.df.iloc[5, 4], 5)
+            self.create_card(self.videos[5][1], self.videos[5][2], self.videos[5][3], self.videos[5][4], 5)
             self.add_feedback(15)
         with col3:
-            self.create_card(self.df.iloc[6, 1], self.df.iloc[6, 2], self.df.iloc[6, 3], self.df.iloc[6, 4], 6)
+            self.create_card(self.videos[6][1], self.videos[6][2], self.videos[6][3], self.videos[6][4], 6)
             self.add_feedback(18)
         with col4:
-            self.create_card(self.df.iloc[7, 1], self.df.iloc[7, 2], self.df.iloc[7, 3], self.df.iloc[7, 4], 7)
+            self.create_card(self.videos[7][1], self.videos[7][2], self.videos[7][3], self.videos[7][4], 7)
             self.add_feedback(21)
 
         # Third line cards
@@ -247,10 +257,10 @@ class Page:
         with col1:
             pass  # Empty column
         with col2:
-            self.create_card(self.df.iloc[8, 1], self.df.iloc[8, 2], self.df.iloc[8, 3], self.df.iloc[8, 4], 8)
+            self.create_card(self.videos[8][1], self.videos[8][2], self.videos[8][3], self.videos[8][4], 8)
             self.add_feedback(24)
         with col3:
-            self.create_card(self.df.iloc[9, 1], self.df.iloc[9, 2], self.df.iloc[9, 3], self.df.iloc[9, 4], 9)
+            self.create_card(self.videos[9][1], self.videos[9][2], self.videos[9][3], self.videos[9][4], 9)
             self.add_feedback(27)
         with col4:
             pass  # Empty column
