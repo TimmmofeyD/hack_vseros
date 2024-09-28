@@ -166,10 +166,14 @@ def main():
     """
     Main function of streamlit application.
     """
+    #
+
     settings_params()
 
     df = init_df()
     df_1 = init_df("новый датасет")
+    df_2 = pd.read_csv('covid_russia.csv').head(10)
+    df_2["res"] = 1
 
     placeholder = st.empty()
 
@@ -181,7 +185,7 @@ def main():
 
     elif st.session_state.num <= 20:
         st.markdown(f'<p class="sub-title">Топ-10 новых рекомендованных видео на RUTUBE. Страница {st.session_state.num}/20</p>', unsafe_allow_html=True)
-        update(new_df=df_1)
+        update(new_df=df_2)
         show_page()
 
     else:
