@@ -3,6 +3,7 @@ import pandas as pd
 from page import Page
 import json
 import time
+import pickle
 
 
 def settings():
@@ -88,15 +89,23 @@ def get_videos(video_ids: list) -> list:
     """
     lst = []
 
-    with open('videos.json', 'r') as openfile:
-        json_object = json.load(openfile)
-        for video_id in video_ids:
-            lst.append([])
-            lst[-1].append(video_id)  # ID video
-            lst[-1].append(json_object[video_id][0])  # title
-            lst[-1].append(json_object[video_id][1])  # category
-            lst[-1].append(json_object[video_id][2])  # description
-            lst[-1].append(json_object[video_id][3])  # date
+    #with open('videos.json', 'r') as openfile:
+    #    json_object = json.load(openfile)
+    #    for video_id in video_ids:
+    #        lst.append([])
+    #        lst[-1].append(video_id)  # ID video
+    #        lst[-1].append(json_object[video_id][1])  # title
+    #        lst[-1].append(json_object[video_id][3])  # category
+    #        lst[-1].append(json_object[video_id][2])  # description
+    #        lst[-1].append(json_object[video_id][0][:-6])  # date without timezone
+
+    for video_id in video_ids:
+        lst.append([])
+        lst[-1].append(video_id)  # ID video
+        lst[-1].append(st.session_state.all_videos[video_id][1])  # title
+        lst[-1].append(st.session_state.all_videos[video_id][3])  # category
+        lst[-1].append(st.session_state.all_videos[video_id][2])  # description
+        lst[-1].append(st.session_state.all_videos[video_id][0][:-6])  # date without timezone
 
     return lst
 
@@ -138,6 +147,10 @@ def init() -> bool:
         st.session_state.video_procent = []
         st.session_state.likes = []
         st.session_state.dislikes = []
+
+        # get all videos
+        with open('video_data_dict.pkl', 'rb') as file:
+            st.session_state.all_videos = pickle.load(file)
 
         # FROM BACKEND        
         st.session_state.video_id = get_video_ids() 
