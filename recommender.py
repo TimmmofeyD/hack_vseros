@@ -52,7 +52,7 @@ class Recommender:
         results = self.client.search(
             collection_name=self.user_collection_name,
             query_vector=self.user_vector,
-            limit=100
+            limit=200
         )
         ids = [result.id for result in results]
         return ids
@@ -66,7 +66,7 @@ class Recommender:
             nearest_videos = self.client.search(
                 collection_name=self.collection_name,
                 query_vector=vect,
-                limit=100
+                limit=200
                 )
             
             nearest_videos_id.extend(list([res.id for res in nearest_videos]))
@@ -84,8 +84,8 @@ class Recommender:
 
 
     def get_ids(self):
-        dict_first = self.get_nearest_video()
-        dict_last = self.get_nearest_users_videos(self.get_nearest_users())
+        dict_first = self.get_nearest_video(top=8)
+        dict_last = self.get_nearest_users_videos(self.get_nearest_users(), 2)
         dict_first.update(dict_last)
         return dict_first
 
