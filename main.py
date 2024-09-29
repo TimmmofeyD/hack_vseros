@@ -1,9 +1,11 @@
 import streamlit as st 
 import pandas as pd
-from page import Page
+import numpy as np
 import json
 import time
 import pickle
+from page import Page
+from recommender import Recommender
 
 
 def settings():
@@ -66,20 +68,6 @@ def settings():
     )
 
 
-def get_video_ids() -> list:
-    """ 
-    Get recommended ID videos.
-
-    :return: list of recommended ID videos.
-    "
-    """
-    with open('id.json', 'r') as openfile:
-        json_object = json.load(openfile)
-        return json_object['id']
-
-    #return [f'{i+1}', f'{i+2}', f'{i+3}', f'{i+4}', f'{i+5}', f'{i+6}', f'{i+7}', f'{i+8}', f'{i+9}', f'{i+10}']
-
-
 def get_videos(video_ids: list) -> list:
     """  
     Get information about videos on recommended ID videos.
@@ -89,23 +77,23 @@ def get_videos(video_ids: list) -> list:
     """
     lst = []
 
-    with open('videos.json', 'r') as openfile:
-       json_object = json.load(openfile)
-       for video_id in video_ids:
-           lst.append([])
-           lst[-1].append(video_id)  # ID video
-           lst[-1].append(json_object[video_id][1])  # title
-           lst[-1].append(json_object[video_id][3])  # category
-           lst[-1].append(json_object[video_id][2])  # description
-           lst[-1].append(json_object[video_id][0][:-6])  # date without timezone
+    # with open('videos.json', 'r') as openfile:
+    #    json_object = json.load(openfile)
+    #    for video_id in video_ids:
+    #        lst.append([])
+    #        lst[-1].append(video_id)  # ID video
+    #        lst[-1].append(json_object[video_id][1])  # title
+    #        lst[-1].append(json_object[video_id][3])  # category
+    #        lst[-1].append(json_object[video_id][2])  # description
+    #        lst[-1].append(json_object[video_id][0][:-6])  # date without timezone
 
-    # for video_id in video_ids:
-    #     lst.append([])
-    #     lst[-1].append(video_id)  # ID video
-    #     lst[-1].append(st.session_state.all_videos[video_id][1])  # title
-    #     lst[-1].append(st.session_state.all_videos[video_id][3])  # category
-    #     lst[-1].append(st.session_state.all_videos[video_id][2])  # description
-    #     lst[-1].append(st.session_state.all_videos[video_id][0][:-6])  # date without timezone
+    for video_id in video_ids:
+        lst.append([])
+        lst[-1].append(video_id)  # ID video
+        lst[-1].append(st.session_state.all_videos[video_id][1])  # title
+        lst[-1].append(st.session_state.all_videos[video_id][3])  # category
+        lst[-1].append(st.session_state.all_videos[video_id][2])  # description
+        lst[-1].append(st.session_state.all_videos[video_id][0][:-6])  # date without timezone
 
     return lst
 
@@ -120,20 +108,19 @@ def post_feedback(videos: list, procents: list, likes: list, dislikes: list):
     :param dislikes: result of ten dislikes in page.
     """
     dct = {
-        videos[0]: [procents[0], likes[0], dislikes[0]],
-        videos[1]: [procents[1], likes[1], dislikes[1]],
-        videos[2]: [procents[2], likes[2], dislikes[2]],
-        videos[3]: [procents[3], likes[3], dislikes[3]],
-        videos[4]: [procents[4], likes[4], dislikes[4]],
-        videos[5]: [procents[5], likes[5], dislikes[5]],
-        videos[6]: [procents[6], likes[6], dislikes[6]],
-        videos[7]: [procents[7], likes[7], dislikes[7]],
-        videos[8]: [procents[8], likes[8], dislikes[8]],
-        videos[9]: [procents[9], likes[9], dislikes[9]]
+        0: [procents[0], likes[0], dislikes[0]],
+        1: [procents[1], likes[1], dislikes[1]],
+        2: [procents[2], likes[2], dislikes[2]],
+        3: [procents[3], likes[3], dislikes[3]],
+        4: [procents[4], likes[4], dislikes[4]],
+        5: [procents[5], likes[5], dislikes[5]],
+        6: [procents[6], likes[6], dislikes[6]],
+        7: [procents[7], likes[7], dislikes[7]],
+        8: [procents[8], likes[8], dislikes[8]],
+        9: [procents[9], likes[9], dislikes[9]]
     }
 
-    with open("results.json", "w") as outfile:
-        json.dump(dct, outfile)
+    st.session_state.recommender.update_user_vector(dct)
 
 
 def init() -> bool:
@@ -148,12 +135,18 @@ def init() -> bool:
         st.session_state.likes = []
         st.session_state.dislikes = []
 
+        # init model
+        zero_vec = pd.read_csv("zero_vec.csv")
+        st.session_state.recommender = Recommender(
+            user_vector=np.array(zero_vec['0'])
+        )
+        
         # get all videos
-        #with open('video_data_dict.pkl', 'rb') as file:
-        #    st.session_state.all_videos = pickle.load(file)
+        with open('video_data_dict.pkl', 'rb') as file:
+           st.session_state.all_videos = pickle.load(file)
 
         # FROM BACKEND        
-        st.session_state.video_id = get_video_ids() 
+        st.session_state.video_id = list(st.session_state.recommender.get_ids().values())
 
         # init page
         st.session_state.num = 1
@@ -161,7 +154,7 @@ def init() -> bool:
             videos=get_videos(st.session_state.video_id), 
             num=st.session_state.num
         )
-        
+
         # init indexes of page for check shows and updates
         st.session_state.is_change = [False for i in range(21)]
 
@@ -194,7 +187,12 @@ def update() -> bool:
         #time.sleep(1)
 
         # FROM BACKEND
-        st.session_state.video_id = get_video_ids()
+        st.session_state.video_id = list(st.session_state.recommender.get_ids().values())
+        #st.session_state.recommender.get_nearest_video_2()
+
+        #st.write(st.session_state.recommender.check)
+        #time.sleep(30)
+
         st.session_state.page.update_values(
             new_videos=get_videos(st.session_state.video_id)
         )
@@ -216,7 +214,7 @@ def restart():
     st.session_state.dislikes = []
 
     # FROM BACKEND        
-    st.session_state.video_id = get_video_ids() 
+    st.session_state.video_id = list(st.session_state.recommender.get_ids().values())
 
     # init page
     st.session_state.num = 1
