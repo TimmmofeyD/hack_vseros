@@ -48,7 +48,7 @@ streamlit run main.py
 http://51.250.12.111:8501/
 
 ### Видео работы с веб-приложением
-
+https://disk.yandex.ru/i/-0_Td6jIymrx_g
 
 ## Наша команда
 
