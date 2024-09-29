@@ -6,6 +6,7 @@ import time
 import pickle
 from page import Page
 from recommender import Recommender
+from qdrant_client import QdrantClient
 
 
 def settings():
@@ -77,23 +78,21 @@ def get_videos(video_ids: list) -> list:
     """
     lst = []
 
-    # with open('videos.json', 'r') as openfile:
-    #    json_object = json.load(openfile)
-    #    for video_id in video_ids:
-    #        lst.append([])
-    #        lst[-1].append(video_id)  # ID video
-    #        lst[-1].append(json_object[video_id][1])  # title
-    #        lst[-1].append(json_object[video_id][3])  # category
-    #        lst[-1].append(json_object[video_id][2])  # description
-    #        lst[-1].append(json_object[video_id][0][:-6])  # date without timezone
+    results = st.session_state.client.retrieve(
+        collection_name=st.session_state.collection_name, 
+        ids=video_ids, 
+        with_vectors=True
+    )
+
+    result_dict = dict(zip([result.id for result in results], [result.payload for result in results]))
 
     for video_id in video_ids:
         lst.append([])
         lst[-1].append(video_id)  # ID video
-        lst[-1].append(st.session_state.all_videos[video_id][1])  # title
-        lst[-1].append(st.session_state.all_videos[video_id][3])  # category
-        lst[-1].append(st.session_state.all_videos[video_id][2])  # description
-        lst[-1].append(st.session_state.all_videos[video_id][0][:-6])  # date without timezone
+        lst[-1].append(result_dict[video_id]["title"])  # title
+        lst[-1].append(result_dict[video_id]["categories"])  # category
+        lst[-1].append(result_dict[video_id]["description"])  # description
+        lst[-1].append(result_dict[video_id]["date"][:-6])  # date without timezone
 
     return lst
 
@@ -140,10 +139,10 @@ def init() -> bool:
         st.session_state.recommender = Recommender(
             user_vector=np.array(zero_vec['0'])
         )
-        
-        # get all videos
-        with open('video_data_dict.pkl', 'rb') as file:
-           st.session_state.all_videos = pickle.load(file)
+
+        # database with all videos
+        st.session_state.client = QdrantClient(host='51.250.12.111', port=6333)
+        st.session_state.collection_name = "video_data"
 
         # FROM BACKEND        
         st.session_state.video_id = list(st.session_state.recommender.get_ids().values())
@@ -184,15 +183,8 @@ def update() -> bool:
             dislikes=st.session_state.dislikes
         )
 
-        #time.sleep(1)
-
         # FROM BACKEND
         st.session_state.video_id = list(st.session_state.recommender.get_ids().values())
-        #st.session_state.recommender.get_nearest_video_2()
-
-        #st.write(st.session_state.recommender.check)
-        #time.sleep(30)
-
         st.session_state.page.update_values(
             new_videos=get_videos(st.session_state.video_id)
         )
