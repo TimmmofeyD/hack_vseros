@@ -3,6 +3,9 @@ from qdrant_client import QdrantClient
 
 
 class EMA:
+    """
+    Exponentional moving average
+    """
     def __init__(self, alpha = 0.5):
         self.alpha = alpha
         self.previous_ema = None
@@ -16,6 +19,9 @@ class EMA:
 
 
 class Recommender:
+    """
+    Main class for recomend videos
+    """
     def __init__(self, user_vector):
         self.previously_seen = [] 
         self.user_vector = user_vector
@@ -75,21 +81,14 @@ class Recommender:
         self.previously_seen.extend(list(new_vids))
         return dict(zip(range(10-top + 1, 11), new_vids))
 
-
-    # def get_ids(self):
-    #     dict_first = self.get_nearest_video(top=7)
-    #     dict_last = self.get_nearest_users_videos(self.get_nearest_users(), 3)
-    #     dict_first.update(dict_last)
-    #     return dict_first
-
-
+    
     def get_ids(self):
         dict_first = self.get_nearest_video(top=8)
         dict_last = self.get_nearest_users_videos(self.get_nearest_users(), 2)
         dict_first.update(dict_last)
         return dict_first
 
-
+    
     def get_nearest_video(self, top=5):
         self.check = self.user_vector
         results = self.client.search(
